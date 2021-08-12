@@ -95,6 +95,8 @@ class Hotel(Resource):
         hoteis.append(novo_hotel)
         return novo_hotel, 201
 
+    def delete(self, hotel_id):
+        global hoteis  # carrega a variável hoteis que contém os hoteis
+        hoteis = [hotel for hotel in hoteis if hotel['hotel_id'] != hotel_id]
 
-    def delete(self):
-        pass
+        return {'message': 'Hotel deletado.'}
