@@ -1,4 +1,4 @@
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 
 
 hoteis = [
@@ -48,17 +48,53 @@ class Hoteis(Resource):
 
 class Hotel(Resource):
 
-    def get(self, hotel_id):
+    argumentos = reqparse.RequestParser()
+    argumentos.add_argument('name')
+    argumentos.add_argument('star')
+    argumentos.add_argument('diaria')
+    argumentos.add_argument('cidade')
+
+    @staticmethod
+    def find_hotel(hotel_id):
         for hotel in hoteis:
             if hotel['hotel_id'] == hotel_id:
                 return hotel
-        return {'messagem': 'Hotel não encontrado'}, 404
+        return None
 
-    def post(self):
-        pass
+    def get(self, hotel_id):
+        hotel = Hotel.find_hotel(hotel_id)
+        if hotel:
+            return hotel
+        return {'mensagem': 'Hotel não encontrado.'}, 404
 
-    def update(self):
-        pass
+    def post(self, hotel_id):
+
+        dados = Hotel.argumentos.parse_args()
+
+        novo_hotel = {
+            'hotel_id': hotel_id,
+            'name': dados['name'],
+            'star': dados['star'],
+            'diaria': dados['diaria'],
+            'cidade': dados['cidade']
+        }
+
+        hoteis.append(novo_hotel)
+
+        return novo_hotel, 200
+
+    def put(self, hotel_id):
+        dados = Hotel.argumentos.parse_args()
+
+        novo_hotel = {'hotel_id': hotel_id, **dados}  # linha enxuta
+
+        hotel = Hotel.find_hotel(hotel_id)
+        if hotel:
+            hotel.update(novo_hotel)
+            return hotel, 200
+        hoteis.append(novo_hotel)
+        return novo_hotel, 201
+
 
     def delete(self):
         pass
