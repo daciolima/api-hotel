@@ -1,50 +1,12 @@
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
 
-
-hoteis = [
-    {'hotel_id': 560,
-     'name': 'Plaza Hotel',
-     'star': 4.3,
-     'diaria': 450.00,
-     'cidade': 'João Pessoa-PB'
-     },
-    {'hotel_id': 561,
-     'name': 'Chica Hotel',
-     'star': 4.0,
-     'diaria': 420.00,
-     'cidade': 'Fortaleza-CE'
-     },
-    {'hotel_id': 562,
-     'name': 'Drummont Hotel',
-     'star': 4.7,
-     'diaria': 400.00,
-     'cidade': 'Rio de Janeiro-RJ'
-     },
-    {'hotel_id': 563,
-     'name': 'Praia Hotel',
-     'star': 4.2,
-     'diaria': 4220.00,
-     'cidade': 'Recife-PE'
-     },
-    {'hotel_id': 564,
-     'name': 'Sol e Mar',
-     'star': 4.3,
-     'diaria': 400.00,
-     'cidade': 'João Pessoa-PB'
-     },
-    {'hotel_id': 565,
-     'name': 'Sol Nascente',
-     'star': 4.4,
-     'diaria': 450.00,
-     'cidade': 'Rio Grande do Norte-RN'
-     }
-]
-
-
 class Hoteis(Resource):
     def get(self):
-        return {'hoteis': hoteis}
+        hoteis_encontrados = HotelModel.hotel_all()
+        if hoteis_encontrados:
+            return {"hoteis": [hotel.json() for hotel in hoteis_encontrados]}
+        return {"message": "Nenhum hotel cadastrado"}
 
 
 class Hotel(Resource):
@@ -52,43 +14,38 @@ class Hotel(Resource):
     argumentos = reqparse.RequestParser()
     argumentos.add_argument('name')
     argumentos.add_argument('star')
-    argumentos.add_argument('diaria')
-    argumentos.add_argument('cidade')
-
-    @staticmethod
-    def find_hotel(hotel_id):
-        for hotel in hoteis:
-            if hotel['hotel_id'] == hotel_id:
-                return hotel
-        return None
+    argumentos.add_argument('daily')
+    argumentos.add_argument('city')
 
     def get(self, hotel_id):
-        hotel = Hotel.find_hotel(hotel_id)
+        hotel = HotelModel.find_hotel(hotel_id)
         if hotel:
-            return hotel
+            return hotel.json()
         return {'mensagem': 'Hotel não encontrado.'}, 404
 
     def post(self, hotel_id):
+        if HotelModel.find_hotel(hotel_id):
+            return {'message': f'Hotel {hotel_id} já existe!'}
+
         dados = Hotel.argumentos.parse_args()
-        novo_objeto = HotelModel(hotel_id, **dados)
-        novo_hotel = novo_objeto.json()
-        hoteis.append(novo_hotel)
-        return novo_hotel, 200
+        hotel = HotelModel(hotel_id, **dados)
+        hotel.save_hotel()
+        return hotel.json()
 
     def put(self, hotel_id):
         dados = Hotel.argumentos.parse_args()
-
-        novo_hotel = {'hotel_id': hotel_id, **dados}  # linha enxuta
-
-        hotel = Hotel.find_hotel(hotel_id)
-        if hotel:
-            hotel.update(novo_hotel)
-            return hotel, 200
-        hoteis.append(novo_hotel)
-        return novo_hotel, 201
+        hotel_encontrado = HotelModel.find_hotel(hotel_id)
+        if hotel_encontrado:
+            hotel_encontrado.update_hotel(**dados)
+            hotel_encontrado.save_hotel()
+            return hotel_encontrado.json(), 200
+        return {"message": "Hotel não encontrado."}, 404
 
     def delete(self, hotel_id):
-        global hoteis  # carrega a variável hoteis que contém os hoteis
-        hoteis = [hotel for hotel in hoteis if hotel['hotel_id'] != hotel_id]
+        hotel_encontrado = HotelModel.find_hotel(hotel_id=hotel_id)
+        if hotel_encontrado:
+            hotel_encontrado.delete_hotel()
+            return {"message": "Hotel deletedo."}
+        return {"message": "Hotel não encontrado."}, 404
 
         return {'message': 'Hotel deletado.'}
