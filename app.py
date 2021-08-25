@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from dynaconf import FlaskDynaconf
 from flask_restful import Api
 from resources.hotel import Hoteis, Hotel
+from resources.site import Site, Sites
 from resources.usuario import UserAll, User, UserRegister, UserLogin, UserLogout
 from sql_alchemy import db
 from flask_jwt_extended import JWTManager
@@ -38,6 +39,8 @@ api.add_resource(Hotel, '/hotel/<int:hotel_id>')
 api.add_resource(UserAll, '/usuarios')
 api.add_resource(UserRegister, '/usuarios')
 api.add_resource(User, '/usuarios/<int:user_id>')
+api.add_resource(Sites, '/sites')
+api.add_resource(Site, '/sites/<string:url>')
 api.add_resource(UserLogin, '/login')
 api.add_resource(UserLogout, '/logout')
 

@@ -1,35 +1,9 @@
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
+from models.site import SiteModel
 from flask_jwt_extended import jwt_required
 import sqlite3
-
-
-def normalize_path_params(city=None,
-                          star_min=0,
-                          star_max=5,
-                          daily_min=0,
-                          daily_max=10000,
-                          limit=50,
-                          offset=0, **dados):
-    if city:
-        return {
-            'star_min': star_min,
-            'star_max': star_max,
-            'daily_min': daily_min,
-            'daily_max': daily_max,
-            'city': city,
-            'limit': limit,
-            'offset': offset
-        }
-
-    return {
-        'star_min': star_min,
-        'star_max': star_max,
-        'daily_min': daily_min,
-        'daily_max': daily_max,
-        'limit': limit,
-        'offset': offset
-    }
+from resources.filtros import consulta_sem_cidade, consulta_com_cidade, normalize_path_params
 
 
 # parametros para filtros personalizados
@@ -54,14 +28,12 @@ class Hoteis(Resource):
         parametros = normalize_path_params(**dados_validos)
 
         if not parametros.get('city'):
-            consulta = "SELECT * FROM hoteis WHERE (star >= ? and star <= ?) and (daily >= ? and daily <= ?) LIMIT ? OFFSET ?"
             tupla = tuple([parametros[chave] for chave in parametros])
-            resultado = cursor.execute(consulta, tupla)
+            resultado = cursor.execute(consulta_sem_cidade, tupla)
 
         else:
-            consulta = "SELECT * FROM hoteis WHERE (star >= ? and star <= ?) and (daily >= ? and daily <= ?) and city = ? LIMIT ? OFFSET ?"
             tupla = tuple([parametros[chave] for chave in parametros])
-            resultado = cursor.execute(consulta, tupla)
+            resultado = cursor.execute(consulta_com_cidade, tupla)
 
         hoteis = []
         for linha in resultado:
@@ -71,6 +43,7 @@ class Hoteis(Resource):
                 'star': linha[2],
                 'daily': linha[3],
                 'city': linha[4],
+                'site_id': linha[5]
             })
 
         return {"hoteis": hoteis}
@@ -83,6 +56,7 @@ class Hotel(Resource):
     argumentos.add_argument('star', type=float, required=True, help="Informe as estrelas")
     argumentos.add_argument('daily', type=float, required=True, help="Diária não pode ficar em branco.")
     argumentos.add_argument('city', type=str, required=True, help="Local obrigatório.")
+    argumentos.add_argument('site_id', type=int, required=True, help="Site obrigatório.")
 
     def get(self, hotel_id):
         hotel = HotelModel.find_hotel(hotel_id)
@@ -97,6 +71,10 @@ class Hotel(Resource):
 
         dados = Hotel.argumentos.parse_args()
         hotel = HotelModel(hotel_id, **dados)
+
+        if not SiteModel.find_by_id(dados['site_id']):
+            return {"message": "O Hotel precisa esta associado com um site_id válido."}, 400
+
         try:
             hotel.save_hotel()
         except:
