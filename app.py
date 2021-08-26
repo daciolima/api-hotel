@@ -3,7 +3,7 @@ from dynaconf import FlaskDynaconf
 from flask_restful import Api
 from resources.hotel import Hoteis, Hotel
 from resources.site import Site, Sites
-from resources.usuario import UserAll, User, UserRegister, UserLogin, UserLogout
+from resources.usuario import UserAll, User, UserRegister, UserLogin, UserLogout, UserConfirm
 from sql_alchemy import db
 from flask_jwt_extended import JWTManager
 from blacklist import BLACKLIST
@@ -43,6 +43,7 @@ api.add_resource(Sites, '/sites')
 api.add_resource(Site, '/sites/<string:url>')
 api.add_resource(UserLogin, '/login')
 api.add_resource(UserLogout, '/logout')
+api.add_resource(UserConfirm, '/usuarios/status/<int:user_id>')
 
 
 if __name__ == '__main__':
